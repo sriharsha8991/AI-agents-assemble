@@ -2,6 +2,7 @@
 #  TalentCraft AI
 This repository will act as primary proof of work for Hackathon on AI Agents assemble by @WEMAKEDEVS
 
+Hackathon Timeline: 8 Dec - 14 Dec (2025)
 ### *AI-powered Skill Growth & Smarter Hiring Platform*
 
 TalentCraft AI is a two-sided intelligent platform designed to help **applicants grow** and **recruiters hire smarter**.
