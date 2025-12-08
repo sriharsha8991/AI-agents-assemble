@@ -18,7 +18,8 @@ TalentCraft AI provides:
 
 ###  **For Applicants**
 
-* Resume upload & AI-powered insights
+* Resume, Job description upload 
+* AI-powered insights
 * Skill extraction & gap analysis
 * Personalized learning path generation
 * Micro-project suggestions
