@@ -1,5 +1,6 @@
 
 #  TalentCraft AI
+This repository will act as primary proof of work for Hackathon on AI Agents assemble by @WEMAKEDEVS
 
 ### *AI-powered Skill Growth & Smarter Hiring Platform*
 
