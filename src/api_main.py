@@ -4,10 +4,14 @@ import tempfile
 from pathlib import Path
 from typing import List
 
-from fastapi import FastAPI, File, HTTPException, UploadFile
+from fastapi import FastAPI, File, HTTPException, UploadFile, Body
 from fastapi.responses import JSONResponse
+from pydantic import BaseModel, Field
 
+from src.models.resume import Resume
+from src.models.ats_score import ATSScore
 from src.services.gemini_client import GeminiClient
+from src.services.ats_scorer import ATSScorer
 from src.storage.resume_store import save_parsed_resume
 
 
@@ -60,7 +64,7 @@ async def upload_resumes(files: List[UploadFile] = File(...)):
                 tmp_path = tmp.name
             
             try:
-                resume = client.extract_resume(tmp_path)
+                resume = client.extract_resume(tmp_path, schema=Resume)
                 resume_id = save_parsed_resume(resume)
                 results.append(
                     {
@@ -82,3 +86,53 @@ async def upload_resumes(files: List[UploadFile] = File(...)):
             )
 
     return JSONResponse(results)
+
+
+class ATSScoreRequest(BaseModel):
+    resume_id: str = Field(..., description="UUID of the stored resume to evaluate.")
+    job_description: str = Field(..., description="Full job description text to compare against.")
+    use_cache: bool = Field(
+        default=True,
+        description="If True, return cached score if available. Set to False to force re-evaluation.",
+    )
+
+
+@app.post("insights/ats-score", response_model=ATSScore)
+async def score_resume_ats(request: ATSScoreRequest = Body(...)):
+    """Score a resume against a job description using ATS criteria.
+
+    Accepts a resume ID (from previously uploaded resume) and a job description.
+    Returns a comprehensive ATS compatibility score with detailed feedback.
+    
+    Results are cached in the resume JSON file. Subsequent requests with the same
+    resume_id and job_description will return the cached score unless use_cache=False.
+
+    Parameters
+    ----------
+    request: ATSScoreRequest
+        Body containing resume_id, job_description, and optional use_cache flag.
+
+    Returns
+    -------
+    ATSScore
+        Detailed ATS scoring result including overall score, section scores,
+        strengths, gaps, recommendations, and keyword analysis.
+    """
+    try:
+        scorer = ATSScorer()
+        ats_result = scorer.score(
+            resume_id=request.resume_id,
+            job_description=request.job_description,
+            use_cache=request.use_cache,
+        )
+        return ats_result
+    except FileNotFoundError as exc:
+        raise HTTPException(
+            status_code=404,
+            detail=f"Resume not found: {exc}",
+        ) from exc
+    except Exception as exc:  # noqa: BLE001
+        raise HTTPException(
+            status_code=500,
+            detail=f"Failed to score resume: {exc}",
+        ) from exc

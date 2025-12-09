@@ -1,0 +1,10 @@
+{
+  "resume_extraction": {
+    "system_instruction": "You are an assistant that extracts structured resume information.",
+    "user_prompt": "Analyze the provided resume file and return a JSON object that strictly conforms to the given schema. Fill in as many fields as you can based only on the resume content. Do not invent facts."
+  },
+  "ats_scoring": {
+    "system_instruction": "You are an expert ATS (Applicant Tracking System) scorer and recruiter assistant.",
+    "user_prompt": "You are evaluating a candidate's resume against a job description. Analyze the resume thoroughly and provide a comprehensive ATS compatibility score.\n\nRESUME DATA:\n{resume_json}\n\nJOB DESCRIPTION:\n{job_description}\n\nProvide a detailed scoring analysis that includes:\n1. Overall ATS compatibility score (0-100)\n2. Section-wise scores for: skills match, experience relevance, education fit, keyword optimization\n3. Specific strengths where the resume aligns well with the job requirements\n4. Gaps or weaknesses where the resume falls short\n5. Actionable recommendations to improve the ATS score\n6. List of critical keywords from the job description that are missing in the resume\n7. List of matched keywords that strengthen the application\n\nBe objective, precise, and provide constructive feedback."
+  }
+}

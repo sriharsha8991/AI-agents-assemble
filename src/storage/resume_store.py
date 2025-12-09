@@ -1,10 +1,11 @@
 from __future__ import annotations
 
+import hashlib
 import json
 import os
 import uuid
 from pathlib import Path
-from typing import Any, Dict
+from typing import Any, Dict, Optional
 
 from src.models.resume import Resume
 
@@ -37,3 +38,78 @@ def load_parsed_resume(resume_id: str) -> Dict[str, Any]:
 
     with path.open("r", encoding="utf-8") as f:
         return json.load(f)
+
+
+def _hash_job_description(job_description: str) -> str:
+    """Generate a stable hash for job description to use as cache key."""
+    return hashlib.sha256(job_description.strip().encode("utf-8")).hexdigest()[:16]
+
+
+def get_cached_ats_score(resume_id: str, job_description: str) -> Optional[Dict[str, Any]]:
+    """Retrieve cached ATS score for a resume-job combination.
+    
+    Parameters
+    ----------
+    resume_id: str
+        UUID of the stored resume.
+    job_description: str
+        Job description text.
+    
+    Returns
+    -------
+    Optional[Dict[str, Any]]
+        Cached ATS score if found, None otherwise.
+    """
+    path = PARSED_DIR / f"{resume_id}.json"
+    if not path.exists():
+        return None
+    
+    with path.open("r", encoding="utf-8") as f:
+        data = json.load(f)
+    
+    # Check if ats_scores field exists
+    ats_scores = data.get("ats_scores", {})
+    job_hash = _hash_job_description(job_description)
+    
+    return ats_scores.get(job_hash)
+
+
+def save_ats_score(
+    resume_id: str,
+    job_description: str,
+    ats_score: Dict[str, Any],
+) -> None:
+    """Save ATS score to resume JSON file for caching.
+    
+    Parameters
+    ----------
+    resume_id: str
+        UUID of the stored resume.
+    job_description: str
+        Job description text used for scoring.
+    ats_score: Dict[str, Any]
+        ATS score data to cache.
+    """
+    path = PARSED_DIR / f"{resume_id}.json"
+    if not path.exists():
+        raise FileNotFoundError(f"No stored resume with id {resume_id}")
+    
+    # Load existing data
+    with path.open("r", encoding="utf-8") as f:
+        data = json.load(f)
+    
+    # Initialize ats_scores if not present
+    if "ats_scores" not in data:
+        data["ats_scores"] = {}
+    
+    # Add new score with job description hash as key
+    job_hash = _hash_job_description(job_description)
+    data["ats_scores"][job_hash] = {
+        "job_description_hash": job_hash,
+        "job_description_preview": job_description[:200] + "..." if len(job_description) > 200 else job_description,
+        "score": ats_score,
+    }
+    
+    # Write back to file
+    with path.open("w", encoding="utf-8") as f:
+        json.dump(data, f, ensure_ascii=False, indent=2)
