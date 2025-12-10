@@ -14,29 +14,20 @@ docker run -d \
   kestra/kestra:latest
 ```
 
-### 2. Deploy Flows
 
-1. Open http://localhost:8080
-2. Go to **Flows** → **Create**
-3. Copy/paste from:
-   - `kestra_flows/salary_research_agent.yaml`
-   - `kestra_flows/upskilling_research_agent.yaml`
-4. Click **Save** for each
 
-### 3. Install Python Dependencies
+### 2. Install Python Dependencies
 
 ```bash
-cd d:\Sriharsha\personal\hackoo
+cd main-directory
 pip install -r requirements.txt
 ```
 
 ### 4. Start FastAPI
 
 ```bash
-uvicorn src.api_main:app --reload --port 8000
-```
-
-### 5. Test It!
+cd .
+pip install -r requirements.txt### 5. Test It!
 
 ```bash
 # Salary recommendation

@@ -73,6 +73,8 @@ def get_cached_ats_score(resume_id: str, job_description: str) -> Optional[Dict[
     return ats_scores.get(job_hash)
 
 
+import tempfile
+
 def save_ats_score(
     resume_id: str,
     job_description: str,
@@ -109,6 +111,12 @@ def save_ats_score(
         "score": ats_score,
     }
     
-    # Write back to file
-    with path.open("w", encoding="utf-8") as f:
-        json.dump(data, f, ensure_ascii=False, indent=2)
+    # Atomic write: write to temp file, then rename
+    fd, tmp_path = tempfile.mkstemp(dir=path.parent, suffix=".tmp")
+    try:
+        with os.fdopen(fd, "w", encoding="utf-8") as f:
+            json.dump(data, f, ensure_ascii=False, indent=2)
+        os.replace(tmp_path, path)
+    except:
+        os.unlink(tmp_path)
+        raise
