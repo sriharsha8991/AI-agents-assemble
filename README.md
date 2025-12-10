@@ -145,10 +145,17 @@ pip install -r requirements.txt
 
 #### 2. Start Kestra
 
+**Note:** Set `DATA_DIR` to your local data directory path before running:
+
 ```bash
+# Set your data directory (adjust path for your system)
+export DATA_DIR=/path/to/your/data
+# Or on Windows PowerShell: $env:DATA_DIR = "D:\path\to\your\data"
+
+# Run Kestra with the mounted data directory
 docker run --pull=always --rm -it -p 8080:8080 --user=root \
   -v /var/run/docker.sock:/var/run/docker.sock \
-  -v /d/Sriharsha/personal/hackoo/data:/data \
+  -v ${DATA_DIR}:/data \
   kestra/kestra:latest server local
 ```
 
@@ -177,19 +184,23 @@ Kestra Open Source uses KV (Key-Value) store for configuration instead of Secret
 
 When running Kestra with Docker, pass environment variables that will be accessible via `{{ kv() }}`:
 
+**Note:** Replace `/path/to/data` with your actual host directory path (e.g., `$PWD/data` or absolute path).
+
 ```bash
-docker run -d \\
-  --name kestra \\
-  -p 8080:8080 \\
-  -e GEMINI_API_KEY=your_gemini_key_here \\
-  -e TAVILY_API_KEY=your_tavily_key_here \\
-  -v /d/Sriharsha/personal/hackoo/data:/data \\
+docker run -d \
+  --name kestra \
+  -p 8080:8080 \
+  -e GEMINI_API_KEY=your_gemini_key_here \
+  -e TAVILY_API_KEY=your_tavily_key_here \
+  -v /path/to/data:/data \
   kestra/kestra:latest
 ```
 
 #### 5. Set Environment Variables
 
 Create `.env`:
+
+> **⚠️ SECURITY WARNING:** The values below are examples only and must NOT be used in production. Always use secure, unique credentials. Store secrets in a secure vault or environment management system, rotate credentials regularly, and never commit real credentials to version control.
 
 ```bash
 GEMINI_API_KEY=your_gemini_key_here

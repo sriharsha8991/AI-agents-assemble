@@ -42,8 +42,7 @@ def load_parsed_resume(resume_id: str) -> Dict[str, Any]:
 
 def _hash_job_description(job_description: str) -> str:
     """Generate a stable hash for job description to use as cache key."""
-    return hashlib.sha256(job_description.strip().encode("utf-8")).hexdigest()[:16]
-
+    return hashlib.sha256(job_description.strip().encode("utf-8")).hexdigest()[:32]
 
 def get_cached_ats_score(resume_id: str, job_description: str) -> Optional[Dict[str, Any]]:
     """Retrieve cached ATS score for a resume-job combination.

@@ -197,15 +197,22 @@ async def get_salary_recommendation(request: SalaryRecommendationRequest = Body(
             experience_years=request.experience_years
         )
         return result
-    except RuntimeError as exc:
+    except FileNotFoundError as exc:
         raise HTTPException(
             status_code=404,
             detail=str(exc)
         ) from exc
-    except Exception as exc:
+    except RuntimeError as exc:
+        # RuntimeError from insights service indicates processing failure
         raise HTTPException(
             status_code=500,
             detail=f"Failed to generate salary recommendation: {exc}"
+        ) from exc
+    except Exception as exc:
+        # Unexpected errors - log and return generic 500
+        raise HTTPException(
+            status_code=500,
+            detail="Internal server error while generating salary recommendation"
         ) from exc
 
 
@@ -234,15 +241,22 @@ async def get_upskilling_resources(request: UpskillingRequest = Body(...)):
             target_role=request.target_role
         )
         return result
-    except RuntimeError as exc:
+    except FileNotFoundError as exc:
         raise HTTPException(
             status_code=404,
             detail=str(exc)
         ) from exc
-    except Exception as exc:
+    except RuntimeError as exc:
+        # RuntimeError from insights service indicates processing failure
         raise HTTPException(
             status_code=500,
             detail=f"Failed to generate upskilling recommendations: {exc}"
+        ) from exc
+    except Exception as exc:
+        # Unexpected errors - log and return generic 500
+        raise HTTPException(
+            status_code=500,
+            detail="Internal server error while generating upskilling recommendations"
         ) from exc
 
 

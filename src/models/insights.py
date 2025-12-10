@@ -2,7 +2,7 @@ from __future__ import annotations
 
 from typing import List, Optional
 
-from pydantic import BaseModel, Field
+from pydantic import BaseModel, Field, field_validator, model_validator
 
 
 class SalaryRange(BaseModel):
@@ -24,6 +24,11 @@ class SalaryRange(BaseModel):
         default="annual",
         description="Salary period (annual, monthly, hourly).",
     )
+    @model_validator(mode='after')
+    def validate_salary_range(self) -> 'SalaryRange':
+        if self.min_salary > self.max_salary:
+            raise ValueError(f"min_salary ({self.min_salary}) cannot exceed max_salary ({self.max_salary})")
+        return self
 
 
 class SalaryRecommendation(BaseModel):
@@ -156,6 +161,17 @@ class LearningPath(BaseModel):
         default_factory=list,
         description="Learning objectives for this phase.",
     )
+    
+    @field_validator("phase")
+    @classmethod
+    def validate_phase(cls, v: int) -> int:
+        """Validate that phase is a positive 1-based integer."""
+        if v <= 0:
+            raise ValueError(
+                f"Phase must be a positive 1-based integer (greater than 0), got {v}. "
+                "Learning path phases should start at 1 and increment sequentially."
+            )
+        return v
 
 
 class UpskillingReport(BaseModel):

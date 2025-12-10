@@ -90,6 +90,7 @@ This separation allows you to update prompts without changing code.
   - Section scores (skills, experience, education, keywords)
   - Strengths, gaps, recommendations
   - Missing and matched keywords
+  - Summary of overall assessment
 
 ### Environment Variables
 

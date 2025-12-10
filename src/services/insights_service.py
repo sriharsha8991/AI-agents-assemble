@@ -124,22 +124,26 @@ All salary figures should be in USD annual.
 """
         
         # Generate response using Gemini with web search
-        response = self.gemini.client.models.generate_content(
-            model='gemini-2.0-flash-exp',
-            contents=prompt,
-            config={
-                'temperature': 0.3,
-                'response_mime_type': 'application/json'
-            }
-        )
-        
-        # Parse JSON response
-        result_text = response.text
-        salary_data = json.loads(result_text)
-        
-        # Create and return SalaryRecommendation object
-        return SalaryRecommendation(**salary_data)
-    
+        try:
+            response = self.gemini.client.models.generate_content(
+                model='gemini-2.0-flash-exp',
+                contents=prompt,
+                config={
+                    'temperature': 0.3,
+                    'response_mime_type': 'application/json'
+                }
+            )
+            
+            # Parse JSON response
+            result_text = response.text
+            salary_data = json.loads(result_text)
+            
+            # Create and return SalaryRecommendation object
+            return SalaryRecommendation(**salary_data)
+        except json.JSONDecodeError as e:
+            raise RuntimeError(f"Failed to parse salary recommendation response: {e}")
+        except Exception as e:
+            raise RuntimeError(f"Failed to generate salary recommendation: {e}")    
     def get_upskilling_recommendations(
         self,
         resume_id: str,
@@ -151,8 +155,8 @@ All salary figures should be in USD annual.
         
         Args:
             resume_id: UUID of the resume
-            job_description_hash: Hash of job description for ATS score lookup
-            target_role: Target role for upskilling
+            job_description_hash: Hash of job description for ATS score lookup (optional)
+            target_role: Target role for upskilling (optional)
         
         Returns:
             UpskillingReport with skill gaps and learning resources
@@ -177,6 +181,24 @@ All salary figures should be in USD annual.
         if not target_role:
             target_role = current_role
         
+        # Try to get ATS score if job_description_hash is provided
+        ats_context = ""
+        if job_description_hash:
+            ats_scores = resume_data.get('ats_scores', {})
+            if job_description_hash in ats_scores:
+                ats_data = ats_scores[job_description_hash]
+                ats_context = f"""
+
+ATS Analysis for Target Role:
+- Overall ATS Score: {ats_data.get('overall_score', 'N/A')}/100
+- Identified Gaps: {', '.join(ats_data.get('gaps', []))}
+- Missing Keywords: {', '.join(ats_data.get('missing_keywords', []))}
+- Matched Keywords: {', '.join(ats_data.get('matched_keywords', []))}
+- ATS Recommendations: {', '.join(ats_data.get('recommendations', []))}
+
+Please prioritize addressing the identified gaps and missing keywords in your upskilling recommendations.
+"""
+        
         # Create prompt for Gemini
         prompt = f"""
 You are an expert career development advisor and technical skills analyst.
@@ -186,7 +208,7 @@ Candidate Profile:
 - Current Skills: {', '.join(skills)}
 - Current Role: {current_role}
 - Target Role: {target_role}
-
+{ats_context}
 Analyze the skill gap between current skills and target role requirements.
 
 Research and provide:
@@ -253,18 +275,23 @@ Return a JSON object with this exact structure:
 """
         
         # Generate response using Gemini
-        response = self.gemini.client.models.generate_content(
-            model='gemini-2.0-flash-exp',
-            contents=prompt,
-            config={
-                'temperature': 0.3,
-                'response_mime_type': 'application/json'
-            }
-        )
-        
-        # Parse JSON response
-        result_text = response.text
-        upskilling_data = json.loads(result_text)
-        
-        # Create and return UpskillingReport object
-        return UpskillingReport(**upskilling_data)
+        try:
+            response = self.gemini.client.models.generate_content(
+                model='gemini-2.0-flash-exp',
+                contents=prompt,
+                config={
+                    'temperature': 0.3,
+                    'response_mime_type': 'application/json'
+                }
+            )
+            
+            # Parse JSON response
+            result_text = response.text
+            upskilling_data = json.loads(result_text)
+            
+            # Create and return UpskillingReport object
+            return UpskillingReport(**upskilling_data)
+        except json.JSONDecodeError as e:
+            raise RuntimeError(f"Failed to parse upskilling recommendation response: {e}")
+        except Exception as e:
+            raise RuntimeError(f"Failed to generate upskilling recommendations: {e}")
