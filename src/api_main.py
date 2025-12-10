@@ -10,8 +10,10 @@ from pydantic import BaseModel, Field
 
 from src.models.resume import Resume
 from src.models.ats_score import ATSScore
+from src.models.insights import SalaryRecommendation, UpskillingReport
 from src.services.gemini_client import GeminiClient
 from src.services.ats_scorer import ATSScorer
+from src.services.insights_service import InsightsService
 from src.storage.resume_store import save_parsed_resume
 
 
@@ -97,7 +99,38 @@ class ATSScoreRequest(BaseModel):
     )
 
 
-@app.post("insights/ats-score", response_model=ATSScore)
+class SalaryRecommendationRequest(BaseModel):
+    """Request for salary recommendation analysis."""
+    resume_id: str = Field(..., description="UUID of the resume to analyze")
+    job_title: str | None = Field(
+        default=None,
+        description="Target job title (optional, uses resume's current role if not provided)"
+    )
+    location: str | None = Field(
+        default=None,
+        description="Target location (optional, uses resume's location if not provided)"
+    )
+    experience_years: int | None = Field(
+        default=None,
+        description="Years of experience (optional, calculated from resume if not provided)"
+    )
+
+
+class UpskillingRequest(BaseModel):
+    """Request for upskilling recommendations."""
+    resume_id: str = Field(..., description="UUID of the resume to analyze")
+    job_description_hash: str | None = Field(
+        default=None,
+        description="Hash of job description for ATS score lookup (optional)"
+    )
+    target_role: str | None = Field(
+        default=None,
+        description="Target role for upskilling (optional, uses current role if not provided)"
+    )
+
+
+
+@app.post("/ats-score", response_model=ATSScore)
 async def score_resume_ats(request: ATSScoreRequest = Body(...)):
     """Score a resume against a job description using ATS criteria.
 
@@ -136,3 +169,82 @@ async def score_resume_ats(request: ATSScoreRequest = Body(...)):
             status_code=500,
             detail=f"Failed to score resume: {exc}",
         ) from exc
+
+
+@app.post("/insights/salary-recommendation", response_model=SalaryRecommendation)
+async def get_salary_recommendation(request: SalaryRecommendationRequest = Body(...)):
+    """Generate salary recommendation based on market research.
+    
+    Uses Gemini AI to analyze market compensation data and provide
+    personalized salary recommendations based on candidate profile.
+    
+    Parameters
+    ----------
+    request: SalaryRecommendationRequest
+        Resume ID, optional job title, location, and experience years.
+    
+    Returns
+    -------
+    SalaryRecommendation
+        Comprehensive salary analysis with market data and trends.
+    """
+    try:
+        insights = InsightsService()
+        result = insights.get_salary_recommendation(
+            resume_id=request.resume_id,
+            job_title=request.job_title,
+            location=request.location,
+            experience_years=request.experience_years
+        )
+        return result
+    except RuntimeError as exc:
+        raise HTTPException(
+            status_code=404,
+            detail=str(exc)
+        ) from exc
+    except Exception as exc:
+        raise HTTPException(
+            status_code=500,
+            detail=f"Failed to generate salary recommendation: {exc}"
+        ) from exc
+
+
+@app.post("/insights/upskilling-resources", response_model=UpskillingReport)
+async def get_upskilling_resources(request: UpskillingRequest = Body(...)):
+    """Generate upskilling recommendations and learning path.
+    
+    Uses Gemini AI to identify skill gaps, find learning resources,
+    and create structured learning paths with practice projects.
+    
+    Parameters
+    ----------
+    request: UpskillingRequest
+        Resume ID, optional job description hash, and target role.
+    
+    Returns
+    -------
+    UpskillingReport
+        Detailed skill gap analysis with learning resources and project recommendations.
+    """
+    try:
+        insights = InsightsService()
+        result = insights.get_upskilling_recommendations(
+            resume_id=request.resume_id,
+            job_description_hash=request.job_description_hash,
+            target_role=request.target_role
+        )
+        return result
+    except RuntimeError as exc:
+        raise HTTPException(
+            status_code=404,
+            detail=str(exc)
+        ) from exc
+    except Exception as exc:
+        raise HTTPException(
+            status_code=500,
+            detail=f"Failed to generate upskilling recommendations: {exc}"
+        ) from exc
+
+
+
+
