@@ -1,270 +1,256 @@
 
-#  TalentCraft AI
-This repository will act as primary proof of work for Hackathon on AI Agents assemble by @WEMAKEDEVS
 
-Hackathon Timeline: 8 Dec - 14 Dec (2025)
+
+#  TalentCraft AI
+
 ### *AI-powered Skill Growth & Smarter Hiring Platform*
 
 TalentCraft AI is a two-sided intelligent platform designed to help **applicants grow** and **recruiters hire smarter**.
-The system uses modern AI capabilities to analyze resumes, summarize job descriptions, generate personalized learning paths, and recommend the best candidates for a role — all while delivering a clean, intuitive UI/UX.
-
-This repository contains the initial setup and structure for the hackathon submission for **AI Agents Assemble – WeMakeDevs**.
+The system uses modern AI capabilities to analyze resumes, summarize job descriptions, generate personalized learning paths, and recommend the best candidates for a role.
 
 ---
 
-## 🚀 **NEW: Kestra AI Agents Integration**
+## ✨ **Features**
 
-This project now includes **autonomous market research agents** powered by [Kestra](https://kestra.io) that provide:
+### **Implemented Features:**
 
-1. **Salary Recommendation Agent**: Market analysis using real compensation data (Glassdoor, Levels.fyi, LinkedIn) to recommend optimal salary ranges based on skills, experience, and location
-2. **Upskilling Resources Agent**: AI-powered learning path generator that identifies skill gaps and curates 15-20+ resources (YouTube tutorials, documentation, courses) with structured learning paths and project suggestions
+#### 1. **Resume Processing & Structuring**
+- Upload multiple resume files (PDF, DOCX, TXT)
+- AI-powered resume parsing using configurable Gemini models
+- Structured JSON extraction (contact info, skills, experience, education, certifications, languages)
+- Persistent storage with UUID-based identification
+- Configurable data storage directory
 
-Both agents use **Gemini 2.0 Flash** with **TavilyWebSearch** for autonomous web research and structured JSON output.
+#### 2. **ATS (Applicant Tracking System) Scoring**
+- Resume-to-job-description compatibility scoring (0-100 scale)
+- Detailed section scores:
+  - Skills match
+  - Experience relevance
+  - Education fit
+  - Keyword optimization
+- Strengths and gaps analysis
+- Missing/matched keywords identification
+- Actionable recommendations for improvement
+- Intelligent caching (avoids re-scoring same resume-JD combinations)
 
-👉 **[Complete Setup Guide & Documentation](#kestra-ai-agents-setup)**
+#### 3. **Salary Market Research**
+- AI-powered salary recommendations
+- Market analysis with median, percentile data (25th, 75th)
+- Recommended salary ranges based on:
+  - Skills and experience
+  - Location and market trends
+  - Industry demand
+- Key factors analysis and source citations
 
----
+#### 4. **Upskilling & Learning Path Generation**
+- AI-driven skill gap identification
+- Learning resource curation (YouTube, documentation, courses)
+- Structured multi-phase learning paths
+- Hands-on project suggestions with difficulty levels
+- Career impact analysis
+- Integration with ATS scores for targeted skill development
 
-#  Project Overview
-
-TalentCraft AI provides:
-
-###  **For Applicants**
-
-* Resume, Job description upload 
-* AI-powered insights
-* Skill extraction & gap analysis
-* Personalized learning path generation
-* Micro-project suggestions
-* Progress tracking dashboard
-
-###  **For Recruiters**
-
-* Upload job descriptions (JD)
-* AI-powered JD summarization
-* Candidate–JD skill fit analysis
-* Candidate ranking & insights
-* Automated interview workflow triggers
-
-This system prioritizes **clean UI**, **modern UX**, and **realistic AI workflows**, keeping the user journey simple and powerful.
-
----
-
-#  Technologies (Planned)
-
-This project will incorporate the sponsor tools required by the hackathon:
-
-### 🟦 **Vercel**
-
-Frontend deployment for a clean, fast, and reliable user experience.
-
-### 🟧 **Oumi**
-
-Used for:
-
-* Resume/JD understanding
-* Skill gap reasoning
-* Learning path generation
-* RL fine-tuning (as required for Iron Intelligence Award)
-
-### 🟪 **Kestra** ✅ **IMPLEMENTED**
-
-**Autonomous AI Agent orchestration** for:
-
-* ✅ **Salary Market Research Agent**: Analyzes compensation data from Glassdoor, Levels.fyi, LinkedIn Salary, Payscale using Gemini 2.0 Flash + TavilyWebSearch
-* ✅ **Upskilling Resources Agent**: Searches YouTube, documentation, courses for skill gaps; generates structured learning paths with 15-20+ resources
-* 🔜 JD summarization workflows
-* 🔜 Decision-making workflows for candidate ranking
-* 🔜 Interview scheduling automation
-* 🔜 Weekly learning path updates
-
-**Agent Architecture**: Kestra AI Agents with LLM (Gemini 2.0 Flash Exp) + TavilyWebSearch tool + JSON schema validation + persistent results
-
-### 🟨 **Cline CLI**
-
-Developer automation tool (separate from main app) to demonstrate:
-
-* Autonomous code generation
-* Workflow automation
-* New capabilities on top of Cline
-  (Required for Infinity Build Award)
-
-### 🟩 **CodeRabbit**
-
-Used for PR reviews and ensuring:
-
-* Clean code
-* Documentation hygiene
-* Open-source best practices
+#### 5. **Configurable Prompt System**
+- JSON-based prompt configuration (`src/config/prompts.json`)
+- Separate prompts for resume extraction and ATS scoring
+- Easy customization without code changes
 
 ---
 
-## 🧠 Kestra AI Agents Setup
+## 🏗️ **Architecture**
 
-### What is Kestra?
+### Technology Stack
 
-**Kestra** is an open-source, event-driven orchestration platform (25.9k GitHub stars) that enables autonomous AI-powered workflows using declarative YAML configuration.
+- **Backend**: FastAPI (Python)
+- **AI Models**: Google Gemini (configurable model version)
+- **Data Storage**: JSON file-based storage
+- **API Standards**: RESTful API with OpenAPI/Swagger documentation
 
-We use Kestra's **AI Agents** feature to build market research agents that:
-- Make autonomous decisions about when to use web search tools
-- Gather real-time compensation data and learning resources
-- Output structured JSON validated against Pydantic schemas
-- Persist results in resume JSON files
-
-### Architecture
+### System Components
 
 ```
-FastAPI (Port 8000)
-  ├─ POST /resumes (resume upload)
-  ├─ POST /ats-score (ATS scoring)
-  ├─ POST /insights/salary-recommendation (NEW)
-  ├─ POST /insights/upskilling-resources (NEW)
-  └─ GET /executions/{execution_id} (NEW)
+FastAPI Server (Configurable Port)
+  ├─ POST /resumes (resume upload & processing)
+  ├─ POST /ats-score (ATS scoring with caching)
+  ├─ POST /insights/salary-recommendation (salary analysis)
+  └─ POST /insights/upskilling-resources (learning path generation)
          │
-         │ Triggers via KestraIntegration
+         │ Uses
          ▼
-Kestra Platform (Port 8080)
-  ├─ salary_research_agent
-  │    ├─ Load resume data
-  │    ├─ AI Agent (Gemini 2.0 + TavilyWebSearch)
-  │    └─ Save salary insights
-  │
-  └─ upskilling_research_agent
-       ├─ Load ATS scores
-       ├─ AI Agent (Gemini 2.0 + TavilyWebSearch)
-       └─ Save upskilling report
+Gemini AI Services
+  ├─ Resume Extraction (gemini-2.5-flash or configurable)
+  ├─ ATS Scoring
+  ├─ Salary Market Research (gemini-2.0-flash-exp or configurable)
+  └─ Upskilling Recommendations
+         │
+         │ Stores
+         ▼
+JSON Storage (Configurable Directory)
+  └─ data/resumes/parsed/{uuid}.json
+       ├─ Resume data
+       ├─ ATS scores (cached)
+       └─ Insights (future)
+
 ```
 
-### Quick Start
+---
 
-#### 1. Install Dependencies
+## 🚀 **Quick Start**
+
+### Prerequisites
+
+- Python 3.8+
+- pip package manager
+- Google Gemini API key ([Get it here](https://aistudio.google.com/app/apikey))
+
+### Installation
+
+#### 1. Clone Repository
+
+```bash
+git clone <repository-url>
+cd <project-directory>
+```
+
+#### 2. Install Dependencies
 
 ```bash
 pip install -r requirements.txt
 ```
 
-#### 2. Start Kestra
+#### 3. Configure Environment Variables
 
-**Note:** Set `DATA_DIR` to your local data directory path before running:
+Create a `.env` file in the project root:
 
 ```bash
-# Set your data directory (adjust path for your system)
-export DATA_DIR=/path/to/your/data
-# Or on Windows PowerShell: $env:DATA_DIR = "D:\path\to\your\data"
+# Required: Gemini API Key
+GEMINI_API_KEY=<your-gemini-api-key>
 
-# Run Kestra with the mounted data directory
-docker run --pull=always --rm -it -p 8080:8080 --user=root \
-  -v /var/run/docker.sock:/var/run/docker.sock \
-  -v ${DATA_DIR}:/data \
-  kestra/kestra:latest server local
+# Optional: Custom Gemini Model (default: gemini-2.5-flash)
+GEMINI_MODEL=gemini-2.5-flash
+
+# Optional: Data Storage Directory (default: ./data/resumes/parsed)
+DATA_DIR=<absolute-path-to-data-directory>
+
+# Optional: Server Configuration
+API_HOST=0.0.0.0
+API_PORT=8000
 ```
 
-Access UI: http://localhost:8080
+> **⚠️ SECURITY WARNING:** Never commit `.env` file or real API keys to version control. Use environment management systems for production deployments.
 
-#### 3. Deploy Kestra Flows
-
-1. Go to http://localhost:8080
-2. Navigate to **Flows** → **Create**
-3. Copy content from `kestra_flows/salary_research_agent.yaml`
-4. Click **Save**
-5. Repeat for `kestra_flows/upskilling_research_agent.yaml`
-
-#### 4. Configure API Keys (KV Store)
-
-Kestra Open Source uses KV (Key-Value) store for configuration instead of Secrets (Enterprise-only).
-
-**Option A: Using Kestra UI**
-1. Go to **Namespaces** → **hackoo.insights**
-2. Click **KV Store** tab
-3. Add:
-   - Key: `GEMINI_API_KEY`, Value: Your Gemini API key
-   - Key: `TAVILY_API_KEY`, Value: Get free key from [tavily.com](https://tavily.com) (1000 searches/month free)
-
-**Option B: Using Docker Environment Variables (Recommended for deployment)**
-
-When running Kestra with Docker, pass environment variables that will be accessible via `{{ kv() }}`:
-
-**Note:** Replace `/path/to/data` with your actual host directory path (e.g., `$PWD/data` or absolute path).
+#### 4. Run the Server
 
 ```bash
-docker run -d \
-  --name kestra \
-  -p 8080:8080 \
-  -e GEMINI_API_KEY=your_gemini_key_here \
-  -e TAVILY_API_KEY=your_tavily_key_here \
-  -v /path/to/data:/data \
-  kestra/kestra:latest
+# Development mode with auto-reload
+uvicorn src.api_main:app --reload --host ${API_HOST:-0.0.0.0} --port ${API_PORT:-8000}
 ```
 
-#### 5. Set Environment Variables
+#### 5. Access API Documentation
 
-Create `.env`:
+- **Interactive Docs**: http://localhost:${API_PORT}/docs
+- **ReDoc**: http://localhost:${API_PORT}/redoc
 
-> **⚠️ SECURITY WARNING:** The values below are examples only and must NOT be used in production. Always use secure, unique credentials. Store secrets in a secure vault or environment management system, rotate credentials regularly, and never commit real credentials to version control.
+---
 
-```bash
-GEMINI_API_KEY=your_gemini_key_here
-KESTRA_HOST=http://localhost:8080
-KESTRA_USERNAME=root@root.com
-KESTRA_PASSWORD=Root!1234
+## 📝 **Configuration**
+
+### Environment Variables
+
+| Variable | Required | Default | Description |
+|----------|----------|---------|-------------|
+| `GEMINI_API_KEY` | ✅ | - | Google Gemini API key for AI processing |
+| `GEMINI_MODEL` | ❌ | `gemini-2.5-flash` | Gemini model version to use |
+| `DATA_DIR` | ❌ | `./data/resumes/parsed` | Directory for storing parsed resumes |
+| `API_HOST` | ❌ | `0.0.0.0` | Server host address |
+| `API_PORT` | ❌ | `8000` | Server port number |
+
+### Prompt Configuration
+
+Customize AI behavior by editing `src/config/prompts.json`:
+
+```json
+{
+  "resume_extraction": {
+    "system_instruction": "<your-custom-instruction>",
+    "user_prompt": "<your-custom-prompt>"
+  },
+  "ats_scoring": {
+    "system_instruction": "<your-custom-instruction>",
+    "user_prompt": "<template-with-{resume_json}-and-{job_description}>"
+  }
+}
 ```
 
-#### 6. Run FastAPI
+---
+
+## 🔌 **API Usage Examples**
+
+### 1. Upload Resume
 
 ```bash
-uvicorn src.api_main:app --reload --port 8000
+curl -X POST "http://localhost:${API_PORT}/resumes" \
+  -H "Content-Type: multipart/form-data" \
+  -F "files=@/path/to/resume.pdf"
 ```
 
-### Usage Examples
+**Response:**
+```json
+[
+  {
+    "filename": "resume.pdf",
+    "id": "uuid-here",
+    "status": "success"
+  }
+]
+```
 
-**Get Salary Recommendation (Auto-Location):**
+### 2. Score Resume (ATS)
 
 ```bash
-# Minimal request - auto-extracts location from resume
-curl -X POST "http://localhost:8000/insights/salary-recommendation" \
+curl -X POST "http://localhost:${API_PORT}/ats-score" \
   -H "Content-Type: application/json" \
   -d '{
-    "resume_id": "0407ed11-4f8f-4f35-89f6-a794ae2653d8"
+    "resume_id": "<resume-uuid>",
+    "job_description": "<job-description-text>",
+    "use_cache": true
   }'
 ```
 
-**Get Salary Recommendation (Custom Location):**
+### 3. Get Salary Recommendation
 
 ```bash
-# Override location for targeted research
-curl -X POST "http://localhost:8000/insights/salary-recommendation" \
+curl -X POST "http://localhost:${API_PORT}/insights/salary-recommendation" \
   -H "Content-Type: application/json" \
   -d '{
-    "resume_id": "0407ed11-4f8f-4f35-89f6-a794ae2653d8",
-    "job_title": "Senior AI/ML Engineer",
+    "resume_id": "<resume-uuid>",
+    "job_title": "Senior Software Engineer",
     "location": "San Francisco, CA",
-    "experience_years": 5,
-    "wait_for_completion": false
+    "experience_years": 5
   }'
 ```
 
-**Get Upskilling Resources (Sync):**
+### 4. Get Upskilling Resources
 
 ```bash
-curl -X POST "http://localhost:8000/insights/upskilling-resources" \
+curl -X POST "http://localhost:${API_PORT}/insights/upskilling-resources" \
   -H "Content-Type: application/json" \
   -d '{
-    "resume_id": "0407ed11-4f8f-4f35-89f6-a794ae2653d8",
-    "job_description_hash": "8511e3e57a9a9a88",
-    "target_role": "Lead AI Architect",
-    "wait_for_completion": true
+    "resume_id": "<resume-uuid>",
+    "job_description_hash": "<optional-hash>",
+    "target_role": "AI/ML Engineer"
   }'
 ```
 
-**Check Execution Status:**
+---
 
-```bash
-curl "http://localhost:8000/executions/{execution_id}"
-```
+## 📊 **Response Examples**
+---
 
-### Sample Output
+## 📊 **Response Examples**
 
-**Salary Insights:**
+### Salary Recommendation Response
+
 ```json
 {
   "recommended_range": {
@@ -277,56 +263,251 @@ curl "http://localhost:8000/executions/{execution_id}"
   "percentile_25": 105000,
   "percentile_75": 150000,
   "key_factors": [
-    "2 years production AI/ML experience",
-    "RAG and LLM orchestration expertise"
+    "X years production experience",
+    "Relevant technology stack expertise"
   ],
   "market_trends": [
-    "Generative AI roles commanding 15-25% premium"
+    "Industry-specific trends and premiums"
   ],
   "sources": [
-    "https://www.levels.fyi/t/software-engineer",
-    "https://www.glassdoor.com/Salaries/ai-ml-engineer-salary"
-  ]
+    "https://www.levels.fyi/...",
+    "https://www.glassdoor.com/..."
+  ],
+  "analysis_summary": "Comprehensive market analysis..."
 }
 ```
 
-**Upskilling Report:**
+### Upskilling Report Response
+
 ```json
 {
-  "identified_gaps": ["NoSQL", "Kubernetes", "Terraform"],
+  "identified_gaps": ["Skill1", "Skill2", "Skill3"],
+  "target_skills": ["TargetSkill1", "TargetSkill2"],
   "all_resources": [
     {
-      "title": "MongoDB Crash Course",
-      "url": "https://youtube.com/watch?v=ofme2o29ngU",
+      "title": "Resource Title",
+      "url": "https://example.com",
       "type": "youtube_video",
-      "skill": "NoSQL",
+      "skill": "Skill1",
       "difficulty": "beginner",
-      "duration": "1 hour"
+      "duration": "2 hours",
+      "description": "Resource description"
     }
-    // ... 15-20 more resources
   ],
   "learning_path": [
     {
       "phase": 1,
-      "title": "Foundation - Database & Governance",
-      "skills_focus": ["NoSQL", "Data Governance"],
+      "title": "Foundation Phase",
+      "skills_focus": ["Skill1", "Skill2"],
       "duration": "2-3 weeks",
-      "projects": [
-        {
-          "title": "Build E-Commerce Catalog with MongoDB",
-          "skills_practiced": ["MongoDB", "Data Modeling"]
-        }
-      ]
+      "objectives": ["Objective1", "Objective2"],
+      "resources": [],
+      "projects": []
+    }
+  ],
+  "project_suggestions": [
+    {
+      "title": "Project Title",
+      "description": "Build something practical",
+      "skills_practiced": ["Skill1", "Skill2"],
+      "difficulty": "intermediate",
+      "estimated_duration": "1-2 weeks",
+      "key_learnings": ["Learning1", "Learning2"]
     }
   ],
   "estimated_total_duration": "8-12 weeks",
-  "career_impact": "Expected salary impact: +15-25%"
+  "career_impact": "Expected salary impact and career growth",
+  "report_summary": "Executive summary of upskilling plan"
 }
 ```
 
-### Documentation
+### ATS Score Response
 
-- **Complete API Documentation**: `docs/insights_api_documentation.md`
-- **Kestra AI Agents Docs**: https://kestra.io/docs/ai-tools/ai-agents
-- **Tavily API**: https://tavily.com
+```json
+{
+  "overall_score": 78,
+  "section_scores": {
+    "skills_match": 85,
+    "experience_relevance": 75,
+    "education_fit": 70,
+    "keyword_optimization": 80
+  },
+  "strengths": [
+    "Strong technical skills alignment",
+    "Relevant industry experience"
+  ],
+  "gaps": [
+    "Missing specific certification",
+    "Limited experience in required technology"
+  ],
+  "recommendations": [
+    "Add more project descriptions",
+    "Include quantified achievements"
+  ],
+  "missing_keywords": ["keyword1", "keyword2"],
+  "matched_keywords": ["keyword3", "keyword4"],
+  "summary": "Overall assessment summary"
+}
+```
 
+---
+
+## 🗂️ **Project Structure**
+
+```
+project-root/
+├── .env                          # Environment variables (not in git)
+├── .gitignore
+├── requirements.txt              # Python dependencies
+├── README.md
+├── QUICKSTART.md
+├── data/
+│   └── resumes/
+│       └── parsed/               # Parsed resume JSON storage
+│           └── {uuid}.json
+├── docs/
+│   ├── api_usage_examples.md
+│   └── inital_doc.md
+└── src/
+    ├── __init__.py
+    ├── api_main.py               # FastAPI application
+    ├── config/
+    │   └── prompts.json          # AI prompt templates
+    ├── models/
+    │   ├── resume.py             # Resume data model
+    │   ├── ats_score.py          # ATS scoring model
+    │   └── insights.py           # Salary & upskilling models
+    ├── services/
+    │   ├── gemini_client.py      # Gemini AI client wrapper
+    │   ├── ats_scorer.py         # ATS scoring service
+    │   └── insights_service.py   # Salary & upskilling service
+    └── storage/
+        └── resume_store.py       # JSON file storage operations
+```
+
+---
+
+## 🧪 **Development**
+
+### Running in Development Mode
+
+```bash
+# With auto-reload
+uvicorn src.api_main:app --reload --host ${API_HOST:-0.0.0.0} --port ${API_PORT:-8000}
+```
+
+### Testing API Endpoints
+
+Use the interactive API documentation at `http://localhost:${API_PORT}/docs` to test endpoints with a user-friendly interface.
+
+### Customizing Prompts
+
+Edit `src/config/prompts.json` to modify AI behavior:
+
+- **resume_extraction**: Controls how resumes are parsed
+- **ats_scoring**: Controls ATS scoring criteria and analysis
+
+---
+
+## 🔐 **Security Best Practices**
+
+1. **Never commit API keys** to version control
+2. **Use environment variables** for all sensitive configuration
+3. **Rotate API keys** regularly
+4. **Use `.gitignore`** to exclude `.env` and sensitive files
+5. **Implement rate limiting** in production
+6. **Validate all user inputs** before processing
+7. **Use HTTPS** in production deployments
+
+---
+
+## 🚢 **Deployment**
+
+### Environment Setup
+
+For production deployments, set environment variables through your hosting platform:
+
+- **Vercel/Netlify**: Use platform environment variable settings
+- **AWS/GCP/Azure**: Use secrets management services
+- **Docker**: Pass environment variables via `-e` flag or docker-compose
+- **Kubernetes**: Use ConfigMaps and Secrets
+
+### Docker Deployment (Example)
+
+```dockerfile
+# Dockerfile
+FROM python:3.10-slim
+
+WORKDIR /app
+
+COPY requirements.txt .
+RUN pip install --no-cache-dir -r requirements.txt
+
+COPY . .
+
+# Use environment variables
+ENV API_HOST=0.0.0.0
+ENV API_PORT=8000
+
+CMD ["sh", "-c", "uvicorn src.api_main:app --host $API_HOST --port $API_PORT"]
+```
+
+```bash
+# Build and run
+docker build -t talentcraft-ai .
+docker run -p 8000:8000 \
+  -e GEMINI_API_KEY=<your-key> \
+  -e GEMINI_MODEL=<model-name> \
+  -v $(pwd)/data:/app/data \
+  talentcraft-ai
+```
+
+---
+
+## 📚 **Documentation**
+
+- **API Documentation**: Available at `/docs` endpoint (Swagger UI)
+- **ReDoc**: Available at `/redoc` endpoint
+- **Usage Examples**: See `docs/api_usage_examples.md`
+- **Quick Start Guide**: See `QUICKSTART.md`
+
+---
+
+## 🤝 **Contributing**
+
+Contributions are welcome! Please follow these guidelines:
+
+1. Fork the repository
+2. Create a feature branch
+3. Make your changes
+4. Add/update tests if applicable
+5. Update documentation
+6. Submit a pull request
+
+---
+
+## 📄 **License**
+
+This project is part of the AI Agents Assemble Hackathon by WeMakeDevs.
+
+---
+
+## 🙏 **Acknowledgments**
+
+- **WeMakeDevs** for organizing the AI Agents Assemble Hackathon
+- **Google Gemini** for powerful AI capabilities
+- **FastAPI** for excellent Python web framework
+- **Pydantic** for robust data validation
+
+---
+
+## 📞 **Support**
+
+For issues, questions, or suggestions:
+- Open an issue on GitHub
+- Check existing documentation
+- Review API examples in `/docs`
+
+---
+
+**Built with ❤️ for the AI Agents Assemble Hackathon**

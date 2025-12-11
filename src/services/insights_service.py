@@ -1,21 +1,29 @@
 """
-Direct insights service for salary recommendations and upskilling without Kestra.
-Uses Gemini AI with function calling and web search.
+Insights service for salary recommendations and upskilling.
+Refactored to use deep agents with structured outputs.
 """
 
-import json
-from typing import Optional, Dict, Any
-from src.services.gemini_client import GeminiClient
-from src.storage.resume_store import load_parsed_resume
+import os
+from typing import Optional
+from src.storage.resume_store import (
+    load_parsed_resume,
+    save_salary_insights,
+    save_upskilling_report,
+)
 from src.models.insights import SalaryRecommendation, UpskillingReport
+from src.services.deep_agent_salary import SalaryResearchAgent
 
 
 class InsightsService:
-    """Direct service for generating salary and upskilling insights using Gemini AI."""
+    """Service for generating salary and upskilling insights using deep agents."""
     
     def __init__(self):
-        """Initialize with Gemini client."""
-        self.gemini = GeminiClient()
+        """Initialize with deep agent for salary research."""
+        # Initialize salary research agent with structured outputs
+        self.salary_agent = SalaryResearchAgent(
+            gemini_api_key=os.getenv("GEMINI_API_KEY"),
+            tavily_api_key=os.getenv("TAVILY_API_KEY"),
+        )
     
     def get_salary_recommendation(
         self,
@@ -25,7 +33,7 @@ class InsightsService:
         experience_years: Optional[int] = None
     ) -> SalaryRecommendation:
         """
-        Generate salary recommendation based on resume and market research.
+        Generate salary recommendation using deep agent with structured output.
         
         Args:
             resume_id: UUID of the resume
@@ -34,10 +42,10 @@ class InsightsService:
             experience_years: Years of experience (calculated from resume if not provided)
         
         Returns:
-            SalaryRecommendation with market analysis
+            SalaryRecommendation with structured market analysis
         
         Raises:
-            RuntimeError: If resume not found or generation fails
+            RuntimeError: If resume not found or research fails
         """
         # Load resume data
         resume_data = load_parsed_resume(resume_id)
@@ -45,9 +53,8 @@ class InsightsService:
             raise RuntimeError(f"Resume {resume_id} not found")
         
         # Extract candidate information
-        skills = resume_data.get('skills', [])[:10]  # Top 10 skills
+        skills = resume_data.get('skills', [])[:8]  # Top 8 skills
         experience = resume_data.get('experience', [])
-        full_name = resume_data.get('full_name', 'Candidate')
         
         # Get location from resume if not provided
         if not location:
@@ -64,86 +71,28 @@ class InsightsService:
         if not experience_years:
             experience_years = len(experience) * 2  # Heuristic: ~2 years per role
         
-        # Create prompt for Gemini
-        prompt = f"""
-You are an expert compensation analyst and market research specialist.
-
-Candidate Profile:
-- Name: {full_name}
-- Skills: {', '.join(skills)}
-- Experience: {experience_years} years
-- Recent Roles: {', '.join([exp.get('job_title', '') for exp in experience[:3]])}
-
-Target Position:
-- Job Title: {job_title}
-- Location: {location}
-
-Conduct a comprehensive salary market analysis and provide a detailed recommendation.
-
-Research current compensation data from multiple reliable sources including:
-- Glassdoor, Payscale, Levels.fyi, LinkedIn Salary
-- Industry reports and compensation surveys
-- Job postings with salary ranges
-
-Analyze multiple data points to determine:
-- Market median salary
-- 25th percentile (lower bound)
-- 75th percentile (upper bound)
-- Recommended range based on candidate's profile
-
-Consider key factors:
-- Years of experience
-- Technical skills depth (AI/ML, cloud, specific frameworks)
-- Location and cost of living
-- Industry demand
-- Company size and type
-
-Identify market trends:
-- Emerging skills commanding premiums
-- Industry growth areas
-- Remote work impact on compensation
-
-Return a JSON object with this exact structure:
-{{
-    "recommended_range": {{
-        "min_salary": <number>,
-        "max_salary": <number>,
-        "currency": "USD",
-        "period": "annual"
-    }},
-    "market_median": <number>,
-    "percentile_25": <number>,
-    "percentile_75": <number>,
-    "key_factors": [<list of strings>],
-    "market_trends": [<list of strings>],
-    "sources": [<list of URLs>],
-    "analysis_summary": "<comprehensive text summary>"
-}}
-
-All salary figures should be in USD annual.
-"""
-        
-        # Generate response using Gemini with web search
+        # Use deep agent for salary research with structured output
         try:
-            response = self.gemini.client.models.generate_content(
-                model='gemini-2.0-flash-exp',
-                contents=prompt,
-                config={
-                    'temperature': 0.3,
-                    'response_mime_type': 'application/json'
-                }
+            salary_recommendation = self.salary_agent.research_salary(
+                job_title=job_title,
+                location=location,
+                experience_years=experience_years,
+                skills=skills,
             )
             
-            # Parse JSON response
-            result_text = response.text
-            salary_data = json.loads(result_text)
+            # Save salary insights to resume JSON
+            save_salary_insights(
+                resume_id=resume_id,
+                salary_data=salary_recommendation.model_dump(mode="json"),
+                job_title=job_title,
+                location=location,
+            )
             
-            # Create and return SalaryRecommendation object
-            return SalaryRecommendation(**salary_data)
-        except json.JSONDecodeError as e:
-            raise RuntimeError(f"Failed to parse salary recommendation response: {e}")
+            return salary_recommendation
+            
         except Exception as e:
-            raise RuntimeError(f"Failed to generate salary recommendation: {e}")    
+            raise RuntimeError(f"Failed to generate salary recommendation: {e}")
+    
     def get_upskilling_recommendations(
         self,
         resume_id: str,
@@ -151,7 +100,7 @@ All salary figures should be in USD annual.
         target_role: Optional[str] = None
     ) -> UpskillingReport:
         """
-        Generate upskilling recommendations and learning path.
+        Generate upskilling recommendations with structured output.
         
         Args:
             resume_id: UUID of the resume
@@ -159,7 +108,7 @@ All salary figures should be in USD annual.
             target_role: Target role for upskilling (optional)
         
         Returns:
-            UpskillingReport with skill gaps and learning resources
+            UpskillingReport with structured skill gaps and learning resources
         
         Raises:
             RuntimeError: If resume not found or generation fails
@@ -172,7 +121,6 @@ All salary figures should be in USD annual.
         # Extract candidate information
         skills = resume_data.get('skills', [])
         experience = resume_data.get('experience', [])
-        full_name = resume_data.get('full_name', 'Candidate')
         
         # Get current role
         current_role = experience[0].get('job_title', 'Software Engineer') if experience else 'Software Engineer'
@@ -181,117 +129,55 @@ All salary figures should be in USD annual.
         if not target_role:
             target_role = current_role
         
-        # Try to get ATS score if job_description_hash is provided
-        ats_context = ""
+        # Get ATS context if available
+        ats_gaps = []
+        ats_missing = []
         if job_description_hash:
             ats_scores = resume_data.get('ats_scores', {})
             if job_description_hash in ats_scores:
                 ats_data = ats_scores[job_description_hash]
-                ats_context = f"""
-
-ATS Analysis for Target Role:
-- Overall ATS Score: {ats_data.get('overall_score', 'N/A')}/100
-- Identified Gaps: {', '.join(ats_data.get('gaps', []))}
-- Missing Keywords: {', '.join(ats_data.get('missing_keywords', []))}
-- Matched Keywords: {', '.join(ats_data.get('matched_keywords', []))}
-- ATS Recommendations: {', '.join(ats_data.get('recommendations', []))}
-
-Please prioritize addressing the identified gaps and missing keywords in your upskilling recommendations.
-"""
+                ats_gaps = ats_data.get('gaps', [])
+                ats_missing = ats_data.get('missing_keywords', [])
         
-        # Create prompt for Gemini
-        prompt = f"""
-You are an expert career development advisor and technical skills analyst.
+        # Create optimized prompt
+        prompt = f"""Analyze skill gaps and create learning path.
 
-Candidate Profile:
-- Name: {full_name}
-- Current Skills: {', '.join(skills)}
-- Current Role: {current_role}
-- Target Role: {target_role}
-{ats_context}
-Analyze the skill gap between current skills and target role requirements.
+Current: {current_role}
+Target: {target_role}
+Skills: {', '.join(skills[:10])}
+{f"ATS Gaps: {', '.join(ats_gaps[:5])}" if ats_gaps else ""}
+{f"Missing Keywords: {', '.join(ats_missing[:5])}" if ats_missing else ""}
 
-Research and provide:
-1. Skills Assessment:
-   - Current strengths
-   - Skills gaps to address
-   - Emerging skills for the target role
-
-2. Learning Resources:
-   - YouTube tutorials and channels
-   - Official documentation
-   - Online courses (free and paid)
-   - Books and articles
-
-3. Learning Path:
-   - Ordered sequence of topics to learn
-   - Estimated time for each topic
-   - Difficulty level
-
-4. Practice Projects:
-   - Real-world projects to build
-   - Complexity level
-   - Skills demonstrated
-
-Return a JSON object with this exact structure:
-{{
-    "skill_gaps": [
-        {{
-            "skill": "<skill name>",
-            "importance": "<high|medium|low>",
-            "current_level": "<beginner|intermediate|advanced|none>",
-            "target_level": "<intermediate|advanced|expert>"
-        }}
-    ],
-    "learning_resources": [
-        {{
-            "title": "<resource title>",
-            "type": "<youtube|documentation|course|book|article>",
-            "url": "<URL>",
-            "description": "<brief description>",
-            "difficulty": "<beginner|intermediate|advanced>",
-            "estimated_hours": <number>
-        }}
-    ],
-    "learning_path": [
-        {{
-            "topic": "<topic name>",
-            "order": <number>,
-            "duration_weeks": <number>,
-            "resources": [<list of resource titles from above>]
-        }}
-    ],
-    "practice_projects": [
-        {{
-            "title": "<project title>",
-            "description": "<what to build>",
-            "skills_practiced": [<list of skills>],
-            "complexity": "<simple|intermediate|advanced>",
-            "estimated_hours": <number>
-        }}
-    ],
-    "summary": "<comprehensive analysis and recommendations>"
-}}
-"""
+Provide:
+1. Identified gaps (skills to learn)
+2. Target skills for {target_role}
+3. Learning resources (15-20 items: videos, docs, courses)
+4. Structured learning path (3-4 phases)
+5. Practice projects (3-5 projects)
+6. Total duration estimate
+7. Expected career impact"""
         
-        # Generate response using Gemini
+        # Use Gemini with structured output
         try:
-            response = self.gemini.client.models.generate_content(
-                model='gemini-2.0-flash-exp',
-                contents=prompt,
-                config={
-                    'temperature': 0.3,
-                    'response_mime_type': 'application/json'
-                }
+            from langchain_google_genai import ChatGoogleGenerativeAI
+            
+            model = ChatGoogleGenerativeAI(
+                model="gemini-2.5-flash",
+                temperature=0.2,
+                api_key=os.getenv("GEMINI_API_KEY"),
             )
             
-            # Parse JSON response
-            result_text = response.text
-            upskilling_data = json.loads(result_text)
+            # Get structured output directly mapped to Pydantic model
+            upskilling_report = model.with_structured_output(UpskillingReport).invoke(prompt)
             
-            # Create and return UpskillingReport object
-            return UpskillingReport(**upskilling_data)
-        except json.JSONDecodeError as e:
-            raise RuntimeError(f"Failed to parse upskilling recommendation response: {e}")
+            # Save upskilling report to resume JSON
+            save_upskilling_report(
+                resume_id=resume_id,
+                upskilling_data=upskilling_report.model_dump(mode="json"),
+                target_role=target_role,
+            )
+            
+            return upskilling_report
+            
         except Exception as e:
             raise RuntimeError(f"Failed to generate upskilling recommendations: {e}")

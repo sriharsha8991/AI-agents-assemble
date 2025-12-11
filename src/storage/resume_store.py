@@ -120,3 +120,101 @@ def save_ats_score(
     except:
         os.unlink(tmp_path)
         raise
+
+
+def save_salary_insights(
+    resume_id: str,
+    salary_data: Dict[str, Any],
+    job_title: str,
+    location: str,
+) -> None:
+    """Save salary insights to resume JSON file.
+    
+    Parameters
+    ----------
+    resume_id: str
+        UUID of the stored resume.
+    salary_data: Dict[str, Any]
+        Salary recommendation data.
+    job_title: str
+        Job title researched.
+    location: str
+        Location researched.
+    """
+    path = PARSED_DIR / f"{resume_id}.json"
+    if not path.exists():
+        raise FileNotFoundError(f"No stored resume with id {resume_id}")
+    
+    # Load existing data
+    with path.open("r", encoding="utf-8") as f:
+        data = json.load(f)
+    
+    # Initialize salary_insights if not present
+    if "salary_insights" not in data:
+        data["salary_insights"] = []
+    
+    # Add new salary insight with metadata
+    insight = {
+        "job_title": job_title,
+        "location": location,
+        "timestamp": str(uuid.uuid4()),  # Using uuid as timestamp placeholder
+        "data": salary_data,
+    }
+    data["salary_insights"].append(insight)
+    
+    # Atomic write
+    fd, tmp_path = tempfile.mkstemp(dir=path.parent, suffix=".tmp")
+    try:
+        with os.fdopen(fd, "w", encoding="utf-8") as f:
+            json.dump(data, f, ensure_ascii=False, indent=2)
+        os.replace(tmp_path, path)
+    except:
+        os.unlink(tmp_path)
+        raise
+
+
+def save_upskilling_report(
+    resume_id: str,
+    upskilling_data: Dict[str, Any],
+    target_role: str,
+) -> None:
+    """Save upskilling report to resume JSON file.
+    
+    Parameters
+    ----------
+    resume_id: str
+        UUID of the stored resume.
+    upskilling_data: Dict[str, Any]
+        Upskilling report data.
+    target_role: str
+        Target role for upskilling.
+    """
+    path = PARSED_DIR / f"{resume_id}.json"
+    if not path.exists():
+        raise FileNotFoundError(f"No stored resume with id {resume_id}")
+    
+    # Load existing data
+    with path.open("r", encoding="utf-8") as f:
+        data = json.load(f)
+    
+    # Initialize upskilling_reports if not present
+    if "upskilling_reports" not in data:
+        data["upskilling_reports"] = []
+    
+    # Add new upskilling report
+    report = {
+        "target_role": target_role,
+        "timestamp": str(uuid.uuid4()),
+        "data": upskilling_data,
+    }
+    data["upskilling_reports"].append(report)
+    
+    # Atomic write
+    fd, tmp_path = tempfile.mkstemp(dir=path.parent, suffix=".tmp")
+    try:
+        with os.fdopen(fd, "w", encoding="utf-8") as f:
+            json.dump(data, f, ensure_ascii=False, indent=2)
+        os.replace(tmp_path, path)
+    except:
+        os.unlink(tmp_path)
+        raise
